@@ -1,0 +1,2 @@
+[console_scripts]
+bgs-generate = bgs.main:main
