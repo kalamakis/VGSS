@@ -64,3 +64,41 @@ def touches_or_overlaps(
     """
 
     return block_distance(a, b) <= abs_tol
+
+
+def boxes_touch(
+    a: Bounds,
+    b: Bounds,
+    *,
+    abs_tol: float = 1e-12,
+) -> bool:
+    """
+    Return True only when two cuboids touch directly.
+
+    Touching means:
+        d(A, B) == 0
+
+    This includes face, edge, and corner contact.
+    """
+
+    return math.isclose(
+        block_distance(a, b),
+        0.0,
+        abs_tol=abs_tol,
+    )
+
+
+def boxes_overlap(
+    a: Bounds,
+    b: Bounds,
+    *,
+    abs_tol: float = 1e-12,
+) -> bool:
+    """
+    Return True when two cuboids overlap.
+
+    Overlap means:
+        d(A, B) < 0
+    """
+
+    return block_distance(a, b) < -abs_tol

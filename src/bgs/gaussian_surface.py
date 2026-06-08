@@ -6,9 +6,10 @@ from typing import Iterable
 
 from .distances import (
     block_distance,
+    boxes_overlap,
+    boxes_touch,
     directional_distances,
     limiting_directions,
-    touches_or_overlaps,
 )
 from .models import Bounds, Conductor, DIRECTIONS, GaussianSurface, make_surface_faces
 
@@ -52,15 +53,6 @@ def generate_bgs(
     max_distance: float = 10.0,
     touch_policy: str = "skip",
 ) -> BGSGenerationResult | None:
-    """
-    Generate a cuboid BGS using the conductor-only portion of Algorithm 4.2.
-
-    Dielectric constraints are intentionally omitted for now.
-
-    `max_distance` is only an isolated-conductor fallback. In the normal case,
-    infinite initial directions are restricted by:
-        min(finite initial extents) * scale_factor
-    """
 
     if scale_factor < 1.0:
         raise ValueError("scale_factor must be at least 1.")
@@ -69,17 +61,31 @@ def generate_bgs(
     if touch_policy not in {"skip", "error"}:
         raise ValueError("touch_policy must be either 'skip' or 'error'.")
 
-    others = [item for item in all_conductors if item.name != master.name]
+    #in this section we check if conductors overlap (error) or they are touching (skip)
+    all_conductors = list(all_conductors)
 
-    for other in others:
-        if touches_or_overlaps(master.bounds, other.bounds):
-            message = _unsupported_touch_message(master, other)
-            if touch_policy == "error":
-                raise UnsupportedGeometryError(message)
-            print(f"WARNING: {message}")
-            return None
+    others: list[Conductor] = []
 
-    initial = {direction: math.inf for direction in DIRECTIONS}
+    for other in all_conductors:
+        # Do not compare the master block with itself.
+        if other.name == master.name:
+            continue
+
+        # Overlapping blocks are probably an input-geometry error.
+        if boxes_overlap(master.bounds, other.bounds):
+            raise UnsupportedGeometryError( f"{master.name} and {other.name} overlap. " "Overlapping conductor blocks are not supported." )
+
+        # Directly touching blocks belong to the same net.
+        # Ignore them only for this master's BGS calculation.
+        if boxes_touch(master.bounds, other.bounds):
+            print("Found touching conductors:" , master.name, "-" , other.name)
+            continue
+
+        # Every non-touching conductor still constrains the BGS.
+        others.append(other)
+
+    #actual algorithm starts here
+    initial = {direction: math.inf for direction in DIRECTIONS} #these are pairs of direction - value for each axis
     pairwise_rows: list[PairwiseDistanceRow] = []
 
     for other in others:

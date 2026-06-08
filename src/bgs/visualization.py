@@ -49,6 +49,7 @@ def plot_geometry(
     conductors: Iterable[Conductor],
     *,
     selected_surface: GaussianSurface | None = None,
+    selected_surfaces: Iterable[GaussianSurface] | None = None,
     save_path: str | Path | None = None,
     show: bool = True,
 ) -> None:
@@ -56,14 +57,23 @@ def plot_geometry(
     if not conductor_list:
         raise ValueError("At least one conductor is required for plotting.")
 
+    if selected_surface is not None and selected_surfaces is not None:
+        raise ValueError(
+            "Pass either selected_surface or selected_surfaces, not both."
+        )
+
+    surface_list = (
+        list(selected_surfaces)
+        if selected_surfaces is not None
+        else ([selected_surface] if selected_surface is not None else [])
+    )
+    master_names = {surface.master_conductor for surface in surface_list}
+
     figure = plt.figure(figsize=(10, 7))
     ax = figure.add_subplot(111, projection="3d")
 
     for conductor in conductor_list:
-        is_master = (
-            selected_surface is not None
-            and conductor.name == selected_surface.master_conductor
-        )
+        is_master = conductor.name in master_names
         _add_box_faces(
             ax,
             conductor.bounds,
@@ -81,18 +91,22 @@ def plot_geometry(
 
     all_bounds = [conductor.bounds for conductor in conductor_list]
 
-    if selected_surface is not None:
+    for surface in surface_list:
         _add_box_faces(
             ax,
-            selected_surface.bounds,
+            surface.bounds,
             alpha=0.08,
             linewidth=1.8,
             linestyle="--",
         )
-        all_bounds.append(selected_surface.bounds)
+        all_bounds.append(surface.bounds)
+
+    if len(surface_list) == 1:
         ax.set_title(
-            f"Conductors and BGS for {selected_surface.master_conductor}"
+            f"Conductors and BGS for {surface_list[0].master_conductor}"
         )
+    elif surface_list:
+        ax.set_title("Conductors and all generated BGSs")
     else:
         ax.set_title("Conductors")
 
