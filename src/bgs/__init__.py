@@ -19,6 +19,7 @@ from .topology import (
     find_net_containing,
     find_touching_nets,
 )
+from .visualization import plot_vgss_results
 from .vgss import (
     NetVGSS,
     build_all_net_vgss,
@@ -47,4 +48,5 @@ __all__ = [
     "build_net_vgss",
     "build_all_net_vgss",
     "build_vgss_for_conductor",
+    "plot_vgss_results",
 ]

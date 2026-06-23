@@ -17,7 +17,8 @@ Each row represents one rectangular face using four 3D vertices.
 ## Current scope
 
 - Parse axis-aligned conductor blocks from `.m` files.
-- Generate one cuboid Boundary Gaussian Surface (BGS) per block with Algorithm 4.2.
+- Generate one cuboid Boundary Gaussian Surface (BGS) per block with Algorithm
+  4.2.
 - Detect electrical nets as connected components of touching blocks.
 - Treat face, edge, and corner contact as touching.
 - Reject overlapping conductor volumes as invalid input.
@@ -31,6 +32,7 @@ Each row represents one rectangular face using four 3D vertices.
   - configurable importance rejection `p(r) / U`.
 - Use `p(r) = 1` and `U = 1` by default.
 - Return only the accepted coordinate `r = [x, y, z]`.
+- Visualize conductor blocks, per-net BGSs, and accepted VGSS points in 3D.
 
 The current target is correctness for coordinates of roughly `0` to `10`.
 Dielectric transitions, non-Manhattan geometry, and FRW hops are not implemented.
@@ -79,11 +81,33 @@ block through face, edge, or corner contact belongs to the same net.
 vgss-sample input/INPUTFILE_TOUCHING_DIRECT.m --net-master C1 --count 10 --seed 1234
 ```
 
-Save the accepted coordinates as CSV:
+Save the accepted coordinates and a 3D visualization:
 
 ```bash
-vgss-sample input/INPUTFILE_TOUCHING_DIRECT.m --net-master C1 --count 1000 --seed 1234 --save-points output/vgss_points.csv
+vgss-sample input/INPUTFILE_TOUCHING_DIRECT.m \
+    --net-master C1 \
+    --count 1000 \
+    --seed 1234 \
+    --save-points output/vgss_points.csv \
+    --save-plot output/net1_vgss.png \
+    --no-show
 ```
+
+Build and sample every detected net with `build_all_net_vgss()`:
+
+```bash
+vgss-sample input/INPUTFILE_TOUCHING_DIRECT.m \
+    --all-nets \
+    --count 200 \
+    --seed 1234 \
+    --save-points output/all_net_vgss_points.csv \
+    --save-plot output/all_net_vgss_samples.png \
+    --no-show
+```
+
+With `--all-nets`, `--count` is the number of accepted samples generated for
+each net. The CSV contains the columns `net,x,y,z`. The plot uses one color per
+net for both its individual BGSs and its accepted points.
 
 ## Python interface
 
@@ -92,13 +116,31 @@ import numpy as np
 
 from bgs.matlab_parser import parse_matlab_geometry
 from bgs.sampling import sample_on_vgss
-from bgs.vgss import build_vgss_for_conductor
+from bgs.vgss import build_all_net_vgss, build_vgss_for_conductor
+from bgs.visualization import plot_vgss_results
 
 conductors = parse_matlab_geometry("input/INPUTFILE_TOUCHING_DIRECT.m")
 net_vgss = build_vgss_for_conductor(conductors, "C1")
 
 rng = np.random.default_rng(1234)
 r = sample_on_vgss(net_vgss.sampling_context, rng)
+
+# Build and sample every net.
+all_net_vgss = build_all_net_vgss(conductors)
+sampled_points = {
+    item.net.name: np.vstack(
+        [sample_on_vgss(item.sampling_context, rng) for _ in range(200)]
+    )
+    for item in all_net_vgss
+}
+
+plot_vgss_results(
+    conductors,
+    all_net_vgss,
+    sampled_points,
+    save_path="output/all_net_vgss_samples.png",
+    show=False,
+)
 ```
 
 To replace the default `p(r) = 1`, pass a callable and a valid upper bound while
@@ -115,6 +157,37 @@ net_vgss = build_vgss_for_conductor(
 
 The sampler raises an error if an evaluated `p(r)` is negative, non-finite, or
 larger than `U`.
+
+
+
+## FRW usage
+How the actual useage should be for FRW.
+    import numpy as np
+
+    from bgs.matlab_parser import parse_matlab_geometry
+    from bgs.sampling import sample_on_vgss
+    from bgs.vgss import build_all_net_vgss
+
+
+    conductors = parse_matlab_geometry("input/inputfile.m" )
+
+    all_net_vgss = build_all_net_vgss(conductors, scale_factor=1.25, max_distance=10.0,)
+
+    rng = np.random.default_rng(1234)
+
+    for master_vgss in all_net_vgss:
+        print(
+            f"Master {master_vgss.net.name}: "
+            f"{master_vgss.net.conductor_names}"
+        )
+
+        # One starting point for this master net.
+        r0 = sample_on_vgss(
+            master_vgss.sampling_context,
+            rng,
+        )
+
+        FRW(start_point=r0, conductors=conductors, master_net=master_vgss.net, rng=rng)
 
 ## Tests
 
