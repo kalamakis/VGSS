@@ -1,60 +1,50 @@
-# Boundary Gaussian Surface Generator
+# BGS and VGSS sampler
 
-This project is a small Python implementation of the conductor-only part of
-Algorithm 4.2. Its purpose is to generate a cuboid Boundary Gaussian Surface
-around a selected conductor block.
+This project implements the conductor-only part of Algorithm 4.2 and the first
+correctness-focused version of Algorithm 4.1 (`SampleOnVGSS`) for axis-aligned
+cuboid conductor blocks.
 
-The program reads simple MATLAB-style geometry files, calculates the distances
-between the selected conductor and the surrounding conductors, constructs the
-Gaussian surface, and displays the result in a 3D plot.
+It reads MATLAB-style geometry files containing matrices such as:
 
-#Algorithm generate_bgs
+```matlab
+C1 = [
+    ...
+];
+```
 
-This code is split in files each for a specific task.
-To explain in short what each file does:
-1. __init__.py
-    -Marks the bgs folder as a python package.
-    -Exposes the most useful classes and functions so that they can be 
-    imported from other files. 
+Each row represents one rectangular face using four 3D vertices.
 
-2. models.py
-    -Defines the basic data structures used 
-    -Contains classes for:
-        *conductor bounding boxes
-        *conductor blocks
-        *Gaussian surfaces
-        *individual faces of a Gaussian surfaces
+## Current scope
 
-3. matlab_parser.py
-    -Reads the MATLAB-style input file. 
-    -Searches for blocks and converts them into python objects
+- Parse axis-aligned conductor blocks from `.m` files.
+- Generate one cuboid Boundary Gaussian Surface (BGS) per block with Algorithm
+  4.2.
+- Detect electrical nets as connected components of touching blocks.
+- Treat face, edge, and corner contact as touching.
+- Reject overlapping conductor volumes as invalid input.
+- Build one independent VGSS sampling context for each detected net.
+- Implement Algorithm 4.1:
+  - area-weighted BGS selection;
+  - uniform sampling on the selected BGS;
+  - rejection of points inside another BGS;
+  - rejection of opposite-normal internal interfaces;
+  - the `1 / n_c(r)` multiplicity correction;
+  - configurable importance rejection `p(r) / U`.
+- Use `p(r) = 1` and `U = 1` by default.
+- Return only the accepted coordinate `r = [x, y, z]`.
 
-4. Distances.py
-    -contains the geometric distance calculations.
-    -It calculates the six signed directional distances which is
-    the maximum of the six directional distances, according to Definition 4.2.
-
-5. gaussian_surface.py
-    -Implements the main Gaussian-surface generation logic.
-    -It uses the directional distances to determine how far each
-    face of the Boundary Gaussian Surface can move away from the selected conductor.
-
-6. visualization.py
-    -Creates the 3D plot.
-    It displays:
-        *all conductors,
-        *the selected master conductor,
-        *the generated Gaussian surface around it.
-
-7. main.py
-    1. reads the command-line arguments,
-    2. loads the input file,
-    3. selects the master conductor,
-    4. generates the Gaussian surface,
-    5. prints the intermediate calculations,
-    6. opens or saves the 3D plot.
+The current target is correctness for coordinates of roughly `0` to `10`.
+Dielectric transitions, non-Manhattan geometry, and FRW hops are not implemented.
 
 ## Setup
+
+### Windows PowerShell
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -e ".[dev]"
+```
 
 ### Linux or macOS
 
@@ -62,12 +52,80 @@ To explain in short what each file does:
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install -e ".[dev]"
+```
 
-## Run the demo
+## Generate BGSs with Algorithm 4.2
 
-Generate the BGS for `C1`, use a scale factor of `2`, print the calculations,
-and save the plot:
+One selected conductor:
 
 ```bash
-bgs-generate input/INPUTFILE_05.m --master C1 --scale-factor 2 --save-plot output/C1_bgs.png
+bgs-generate input/INPUTFILE_05.m --master C1 --scale-factor 2
+```
+
+Every conductor in one combined plot:
+
+```bash
+bgs-generate input/INPUTFILE_05.m --all --scale-factor 2 --no-show
+```
+
+`--max-distance` is only the fallback extent for a block with no finite
+non-touching conductor constraint.
+
+## Sample one net with Algorithm 4.1
+
+`--net-master` identifies the desired net. Every conductor connected to that
+block through face, edge, or corner contact belongs to the same net.
+
+```bash
+vgss-sample input/INPUTFILE_TOUCHING_DIRECT.m \
+    --net-master C1 \
+    --count 10 \
+    --seed 1234
+```
+
+Save the accepted coordinates as CSV:
+
+```bash
+vgss-sample input/INPUTFILE_TOUCHING_DIRECT.m \
+    --net-master C1 \
+    --count 1000 \
+    --seed 1234 \
+    --save-points output/vgss_points.csv
+```
+
+## Python interface
+
+```python
+import numpy as np
+
+from bgs.matlab_parser import parse_matlab_geometry
+from bgs.sampling import sample_on_vgss
+from bgs.vgss import build_vgss_for_conductor
+
+conductors = parse_matlab_geometry("input/INPUTFILE_TOUCHING_DIRECT.m")
+net_vgss = build_vgss_for_conductor(conductors, "C1")
+
+rng = np.random.default_rng(1234)
+r = sample_on_vgss(net_vgss.sampling_context, rng)
+```
+
+To replace the default `p(r) = 1`, pass a callable and a valid upper bound while
+building the context:
+
+```python
+net_vgss = build_vgss_for_conductor(
+    conductors,
+    "C1",
+    importance_function=lambda r: 0.5,
+    upper_bound=1.0,
+)
+```
+
+The sampler raises an error if an evaluated `p(r)` is negative, non-finite, or
+larger than `U`.
+
+## Tests
+
+```bash
+pytest
 ```

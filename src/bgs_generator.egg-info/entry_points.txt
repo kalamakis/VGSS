@@ -1,2 +1,3 @@
 [console_scripts]
 bgs-generate = bgs.main:main
+vgss-sample = bgs.vgss_cli:main

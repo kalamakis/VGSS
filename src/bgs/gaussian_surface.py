@@ -73,12 +73,19 @@ def generate_bgs(
 
         # Overlapping blocks are probably an input-geometry error.
         if boxes_overlap(master.bounds, other.bounds):
-            raise UnsupportedGeometryError( f"{master.name} and {other.name} overlap. " "Overlapping conductor blocks are not supported." )
+            raise UnsupportedGeometryError(
+                f"{master.name} and {other.name} overlap. "
+                "Overlapping conductor blocks are not supported."
+            )
 
         # Directly touching blocks belong to the same net.
         # Ignore them only for this master's BGS calculation.
         if boxes_touch(master.bounds, other.bounds):
-            print("Found touching conductors:" , master.name, "-" , other.name)
+            if touch_policy == "error":
+                raise UnsupportedGeometryError(
+                    f"{master.name} and {other.name} touch. "
+                    "Use touch_policy='skip' when touching blocks form one net."
+                )
             continue
 
         # Every non-touching conductor still constrains the BGS.

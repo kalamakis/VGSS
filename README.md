@@ -1,7 +1,8 @@
-# Boundary Gaussian Surface generator
+# BGS and VGSS sampler
 
-This first milestone implements the conductor-only part of Algorithm 4.2 for
-axis-aligned cuboid conductor blocks.
+This project implements the conductor-only part of Algorithm 4.2 and the first
+correctness-focused version of Algorithm 4.1 (`SampleOnVGSS`) for axis-aligned
+cuboid conductor blocks.
 
 It reads MATLAB-style geometry files containing matrices such as:
 
@@ -15,22 +16,24 @@ Each row represents one rectangular face using four 3D vertices.
 
 ## Current scope
 
-- Parse conductor blocks from `.m` input files.
-- Extract axis-aligned bounding boxes.
-- Calculate the six signed directional distances:
-  `PX`, `PY`, `PZ`, `NX`, `NY`, `NZ`.
-- Generate a cuboid Boundary Gaussian Surface (BGS) around one conductor or all
-  conductors.
-- Print intermediate distance tables in the terminal.
-- Display or save a 3D plot.
-- Detect touching or overlapping blocks and skip them by default because
-  multi-block conductor merging is intentionally reserved for a later milestone.
+- Parse axis-aligned conductor blocks from `.m` files.
+- Generate one cuboid Boundary Gaussian Surface (BGS) per block with Algorithm 4.2.
+- Detect electrical nets as connected components of touching blocks.
+- Treat face, edge, and corner contact as touching.
+- Reject overlapping conductor volumes as invalid input.
+- Build one independent VGSS sampling context for each detected net.
+- Implement Algorithm 4.1:
+  - area-weighted BGS selection;
+  - uniform sampling on the selected BGS;
+  - rejection of points inside another BGS;
+  - rejection of opposite-normal internal interfaces;
+  - the `1 / n_c(r)` multiplicity correction;
+  - configurable importance rejection `p(r) / U`.
+- Use `p(r) = 1` and `U = 1` by default.
+- Return only the accepted coordinate `r = [x, y, z]`.
 
-Dielectric transitions are intentionally not implemented yet.
-
-The code already stores each BGS as six faces with vertices, normals, and areas.
-That representation is intended for the later implementation of
-`SampleOnVGSS`.
+The current target is correctness for coordinates of roughly `0` to `10`.
+Dielectric transitions, non-Manhattan geometry, and FRW hops are not implemented.
 
 ## Setup
 
@@ -50,73 +53,71 @@ source .venv/bin/activate
 python -m pip install -e ".[dev]"
 ```
 
-## Run the demo
+## Generate BGSs with Algorithm 4.2
 
-Generate the BGS for `C1`, use a scale factor of `2`, print the calculations,
-and save the plot:
-
-```bash
-bgs-generate input/INPUTFILE_05.m ^
-    --master C1 ^
-    --scale-factor 2 ^
-    --save-plot output/C1_bgs.png
-```
-
-On Linux or macOS, replace `^` with `\`.
-
-To avoid opening an interactive window:
+One selected conductor:
 
 ```bash
-bgs-generate input/INPUTFILE_05.m --master C1 --scale-factor 2 \
-    --save-plot output/C1_bgs.png --no-show
+bgs-generate input/INPUTFILE_05.m --master C1 --scale-factor 2
 ```
 
-Generate surfaces for every supported conductor:
+Every conductor in one combined plot:
 
 ```bash
-bgs-generate input/INPUTFILE_05.m --all --scale-factor 2
+bgs-generate input/INPUTFILE_05.m --all --scale-factor 2 --no-show
 ```
 
-## About `max_distance`
+`--max-distance` is only the fallback extent for a block with no finite
+non-touching conductor constraint.
 
-Algorithm 4.2 normally does not need a hard maximum distance. Directions with no
-nearby conductor initially remain infinite and are later restricted by:
+## Sample one net with Algorithm 4.1
 
-```text
-minimum finite extent * scale_factor
-```
-
-The CLI option `--max-distance` is only a fallback for an isolated conductor,
-where all six initial distances remain infinite.
-
-## Touching conductors
-
-The current implementation treats touching and overlapping blocks as an
-unsupported geometry case. With the default policy, affected BGS generation is
-skipped and a warning is printed:
+`--net-master` identifies the desired net. Every conductor connected to that
+block through face, edge, or corner contact belongs to the same net.
 
 ```bash
-bgs-generate input/file.m --touch-policy skip
+vgss-sample input/INPUTFILE_TOUCHING_DIRECT.m --net-master C1 --count 10 --seed 1234
 ```
 
-For strict validation:
+Save the accepted coordinates as CSV:
 
 ```bash
-bgs-generate input/file.m --touch-policy error
+vgss-sample input/INPUTFILE_TOUCHING_DIRECT.m --net-master C1 --count 1000 --seed 1234 --save-points output/vgss_points.csv
 ```
 
-A future extension can merge touching blocks that belong to the same physical
-conductor.
+## Python interface
+
+```python
+import numpy as np
+
+from bgs.matlab_parser import parse_matlab_geometry
+from bgs.sampling import sample_on_vgss
+from bgs.vgss import build_vgss_for_conductor
+
+conductors = parse_matlab_geometry("input/INPUTFILE_TOUCHING_DIRECT.m")
+net_vgss = build_vgss_for_conductor(conductors, "C1")
+
+rng = np.random.default_rng(1234)
+r = sample_on_vgss(net_vgss.sampling_context, rng)
+```
+
+To replace the default `p(r) = 1`, pass a callable and a valid upper bound while
+building the context:
+
+```python
+net_vgss = build_vgss_for_conductor(
+    conductors,
+    "C1",
+    importance_function=lambda r: 0.5,
+    upper_bound=1.0,
+)
+```
+
+The sampler raises an error if an evaluated `p(r)` is negative, non-finite, or
+larger than `U`.
 
 ## Tests
 
 ```bash
 pytest
 ```
-
-## Later milestone: `SampleOnVGSS`
-
-The package includes a placeholder module named `sampling.py`. The generated
-BGS objects already expose face areas, vertices, and outward normals. These are
-the geometric building blocks needed for area-weighted BGS sampling and uniform
-surface-point sampling.

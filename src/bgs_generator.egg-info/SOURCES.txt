@@ -1,4 +1,5 @@
 README.md
+README.txt
 pyproject.toml
 src/bgs/__init__.py
 src/bgs/distances.py
@@ -7,6 +8,10 @@ src/bgs/main.py
 src/bgs/matlab_parser.py
 src/bgs/models.py
 src/bgs/sampling.py
+src/bgs/topology.py
+src/bgs/vgss.py
+src/bgs/vgss_cli.py
+src/bgs/vgss_geometry.py
 src/bgs/visualization.py
 src/bgs_generator.egg-info/PKG-INFO
 src/bgs_generator.egg-info/SOURCES.txt
@@ -17,3 +22,7 @@ src/bgs_generator.egg-info/top_level.txt
 tests/test_distances.py
 tests/test_gaussian_surface.py
 tests/test_parser.py
+tests/test_sampling.py
+tests/test_topology.py
+tests/test_vgss_geometry.py
+tests/test_vgss_integration.py

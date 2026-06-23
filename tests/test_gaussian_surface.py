@@ -69,10 +69,10 @@ def test_c1_surface_with_scale_factor_two() -> None:
     assert result.gaussian_surface.bounds == Bounds(-2, 2, -2, 2, -2, 3)
 
 
-# def test_touching_distinct_blocks_can_raise_clear_error() -> None:
-#     faces = np.zeros((6, 4, 3), dtype=float)
-#     c1 = Conductor("C1", Bounds(0, 1, 0, 1, 0, 1), faces)
-#     c2 = Conductor("C2", Bounds(1, 2, 0, 1, 0, 1), faces)
+def test_touching_distinct_blocks_can_raise_clear_error() -> None:
+    faces = np.zeros((6, 4, 3), dtype=float)
+    c1 = Conductor("C1", Bounds(0, 1, 0, 1, 0, 1), faces)
+    c2 = Conductor("C2", Bounds(1, 2, 0, 1, 0, 1), faces)
 
-#     with pytest.raises(UnsupportedGeometryError):
-#         generate_bgs(c1, [c1, c2], touch_policy="error")
+    with pytest.raises(UnsupportedGeometryError, match="touch"):
+        generate_bgs(c1, [c1, c2], touch_policy="error")
