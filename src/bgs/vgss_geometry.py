@@ -173,6 +173,7 @@ def classify_candidate(
     if not point_on_surface(source_surface, point, abs_tol=abs_tol):
         raise ValueError("The proposed point is not on the selected source BGS.")
 
+    #get indexes of surfaces to check for Step 3
     if neighbor_indices is None:
         indices_to_check = (
             index
@@ -186,31 +187,25 @@ def classify_candidate(
             if index != source_surface_index
         )
 
+    #step 4
+    #nc
     coincident_count = 1
 
     for other_index in indices_to_check:
         other_surface = surfaces[other_index]
 
-        if point_strictly_inside_bounds(
-            point,
-            other_surface.bounds,
-            abs_tol=abs_tol,
-        ):
+        if point_strictly_inside_bounds( point, other_surface.bounds, abs_tol=abs_tol, ):
             return CandidateClassification(
                 inside_other_surface=True,
                 has_opposite_normal=False,
                 coincident_surface_count=coincident_count,
             )
 
-        other_faces = faces_containing_point(
-            other_surface,
-            point,
-            abs_tol=abs_tol,
-        )
+        other_faces = faces_containing_point( other_surface, point, abs_tol=abs_tol, )
         if not other_faces:
             continue
 
-        if any(
+        if any( 
             normals_are_opposite(
                 source_face.normal,
                 other_face.normal,

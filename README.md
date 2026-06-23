@@ -93,16 +93,11 @@ vgss-sample input/INPUTFILE_TOUCHING_DIRECT.m \
     --no-show
 ```
 
+## DEMO
 Build and sample every detected net with `build_all_net_vgss()`:
 
 ```bash
-vgss-sample input/INPUTFILE_TOUCHING_DIRECT.m \
-    --all-nets \
-    --count 200 \
-    --seed 1234 \
-    --save-points output/all_net_vgss_points.csv \
-    --save-plot output/all_net_vgss_samples.png \
-    --no-show
+vgss-sample input/INPUTFILE_TOUCHING_DIRECT.m --all-nets --count 1000 --seed 1234 --save-points output/all_net_vgss_points.csv --save-plot output/all_net_vgss_samples.png
 ```
 
 With `--all-nets`, `--count` is the number of accepted samples generated for
@@ -176,18 +171,13 @@ How the actual useage should be for FRW.
     rng = np.random.default_rng(1234)
 
     for master_vgss in all_net_vgss:
-        print(
-            f"Master {master_vgss.net.name}: "
-            f"{master_vgss.net.conductor_names}"
-        )
-
         # One starting point for this master net.
         r0 = sample_on_vgss(
             master_vgss.sampling_context,
             rng,
         )
 
-        FRW(start_point=r0, conductors=conductors, master_net=master_vgss.net, rng=rng)
+        FRW(start_point=r0, conductors=conductors, master_net=master_vgss.net)
 
 ## Tests
 

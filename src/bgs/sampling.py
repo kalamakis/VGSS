@@ -135,12 +135,7 @@ def prepare_vgss_sampling(
     )
 
 
-def sample_on_vgss(
-    context: VGSSSamplingContext,
-    rng: np.random.Generator,
-    *,
-    max_attempts: int = 10_000,
-) -> np.ndarray:
+def sample_on_vgss( context: VGSSSamplingContext, rng: np.random.Generator, *, max_attempts: int = 10000, ) -> np.ndarray:
     """
     Implement Algorithm 4.1 and return only the accepted point r.
 
@@ -176,24 +171,14 @@ def sample_on_vgss(
         x1, x2 = rng.random(2)
 
         # Step 6: correct for a point proposed by multiple coincident BGSs.
-        multiplicity_acceptance = 1.0 / classification.coincident_surface_count
+        multiplicity_acceptance = 1.0 / classification.coincident_surface_count #1/nc
         if x1 > multiplicity_acceptance:
             continue
 
-        # Step 7: optional importance-sampling rejection p(r) / U.
-        importance_value = float(context.importance_function(point))
-        if not math.isfinite(importance_value) or importance_value < 0.0:
-            raise ValueError("p(r) must be finite and non-negative.")
-        if importance_value > context.upper_bound + context.abs_tol:
-            raise ValueError(
-                f"p(r)={importance_value:.6g} exceeds U={context.upper_bound:.6g}."
-            )
+        # Step 7: optional importance-sampling rejection p(r) / U. #for now this function p(r) = 1;
+        importance_value = float(context.importance_function(point)) 
 
-        importance_acceptance = min(
-            1.0,
-            importance_value / context.upper_bound,
-        )
-        if x2 > importance_acceptance:
+        if x2 >  importance_value / context.upper_bound: # U =1 for now
             continue
 
         # Step 8.
