@@ -158,29 +158,29 @@ larger than `U`.
 ## FRW usage
 How the actual useage should be for FRW.
 ```python
-    import numpy as np
-    from bgs.matlab_parser import parse_matlab_geometry
-    from bgs.sampling import sample_on_vgss
-    from bgs.vgss import build_all_net_vgss
+import numpy as np
+from bgs.matlab_parser import parse_matlab_geometry
+from bgs.sampling import sample_on_vgss
+from bgs.vgss import build_all_net_vgss
 
 
-    conductors = parse_matlab_geometry("input/inputfile.m" )
+conductors = parse_matlab_geometry("input/inputfile.m" )
 
-    all_net_vgss = build_all_net_vgss(conductors, scale_factor=1.25, max_distance=10.0,)
+all_net_vgss = build_all_net_vgss(conductors, scale_factor=1.25, max_distance=10.0,)
 
-    rng = np.random.default_rng(1234)
+rng = np.random.default_rng(1234)
 
-    for master_vgss in all_net_vgss:
-        # One starting point for this master net.
-        r0 = sample_on_vgss(
-            master_vgss.sampling_context,
-            rng,
-        )
+for master_vgss in all_net_vgss:
+    # One starting point for this master net.
+    r0 = sample_on_vgss(
+        master_vgss.sampling_context,
+        rng,
+    )
 
-        FRW(start_point=r0, conductors=conductors, master_net=master_vgss.net)
+    FRW(start_point=r0, conductors=conductors, master_net=master_vgss.net)
 ```
 ## Tests
-
+To run prebuilt tests:
 ```bash
 pytest
 ```
