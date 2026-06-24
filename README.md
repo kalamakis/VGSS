@@ -157,8 +157,8 @@ larger than `U`.
 
 ## FRW usage
 How the actual useage should be for FRW.
+```python
     import numpy as np
-
     from bgs.matlab_parser import parse_matlab_geometry
     from bgs.sampling import sample_on_vgss
     from bgs.vgss import build_all_net_vgss
@@ -178,7 +178,7 @@ How the actual useage should be for FRW.
         )
 
         FRW(start_point=r0, conductors=conductors, master_net=master_vgss.net)
-
+```
 ## Tests
 
 ```bash
