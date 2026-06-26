@@ -74,6 +74,31 @@ class Conductor:
     face_vertices: np.ndarray
     relative_permittivity: float | None = None
 
+    # Compatibility properties used by the original FRW implementation.
+    @property
+    def min_bounds(self) -> np.ndarray:
+        return np.array(
+            [self.bounds.xmin, self.bounds.ymin, self.bounds.zmin],
+            dtype=float,
+        )
+
+    @property
+    def max_bounds(self) -> np.ndarray:
+        return np.array(
+            [self.bounds.xmax, self.bounds.ymax, self.bounds.zmax],
+            dtype=float,
+        )
+
+    def distance_to_point(self, point: np.ndarray) -> float:
+        """Chebyshev distance used by the original maximal-cube FRW."""
+
+        point = np.asarray(point, dtype=float)
+        clamped = np.maximum(
+            self.min_bounds,
+            np.minimum(point, self.max_bounds),
+        )
+        return float(np.max(np.abs(point - clamped)))
+
 
 @dataclass(frozen=True)
 class SurfaceFace:
@@ -96,6 +121,20 @@ class GaussianSurface:
     @property
     def area(self) -> float:
         return float(sum(face.area for face in self.faces))
+
+    @property
+    def min_bounds(self) -> np.ndarray:
+        return np.array(
+            [self.bounds.xmin, self.bounds.ymin, self.bounds.zmin],
+            dtype=float,
+        )
+
+    @property
+    def max_bounds(self) -> np.ndarray:
+        return np.array(
+            [self.bounds.xmax, self.bounds.ymax, self.bounds.zmax],
+            dtype=float,
+        )
 
 
 def make_surface_faces(bounds: Bounds) -> tuple[SurfaceFace, ...]:

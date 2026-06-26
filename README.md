@@ -35,7 +35,7 @@ Each row represents one rectangular face using four 3D vertices.
 - Visualize conductor blocks, per-net BGSs, and accepted VGSS points in 3D.
 
 The current target is correctness for coordinates of roughly `0` to `10`.
-Dielectric transitions, non-Manhattan geometry, and FRW hops are not implemented.
+Dielectric transitions and non-Manhattan geometry are not implemented. The existing geometric FRW is connected to the VGSS sampler without replacing its maximal-cube walk logic.
 
 ## Setup
 
@@ -93,7 +93,7 @@ vgss-sample input/INPUTFILE_TOUCHING_DIRECT.m \
     --no-show
 ```
 
-## DEMO
+## DEMO for vgss
 Build and sample every detected net with `build_all_net_vgss()`:
 
 ```bash
@@ -156,29 +156,64 @@ larger than `U`.
 
 
 ## FRW usage
-How the actual useage should be for FRW.
+
+The FRW keeps its original maximal-cube walk. The only change to its starting
+step is that every walk receives a fresh accepted point from Algorithm 4.1.
+
 ```python
 import numpy as np
+
+from FRW.random_walk import run_frw_geometry
 from bgs.matlab_parser import parse_matlab_geometry
-from bgs.sampling import sample_on_vgss
 from bgs.vgss import build_all_net_vgss
 
 
-conductors = parse_matlab_geometry("input/inputfile.m" )
+def F(r: np.ndarray) -> float:
+    # Replace this with the book's F(r).
+    return 1.0
 
-all_net_vgss = build_all_net_vgss(conductors, scale_factor=1.25, max_distance=10.0,)
+
+conductors = parse_matlab_geometry("input/INPUTFILE_TOUCHING_DIRECT.m")
+
+all_net_vgss = build_all_net_vgss(
+    conductors,
+    scale_factor=1.25,
+    max_distance=10.0,
+    importance_function=F,
+    upper_bound=1.0,  # Must satisfy F(r) <= U over the complete VGSS.
+)
 
 rng = np.random.default_rng(1234)
 
 for master_vgss in all_net_vgss:
-    # One starting point for this master net.
-    r0 = sample_on_vgss(
-        master_vgss.sampling_context,
+    result = run_frw_geometry(
+        conductors,
+        master_vgss,
         rng,
+        num_walks=5000,
+        max_hops=100,
     )
 
-    FRW(start_point=r0, conductors=conductors, master_net=master_vgss.net)
+    print(master_vgss.net.name, result["H"])
 ```
+
+`result["walks"]` preserves the original walk output (`path_data` and
+`hit_conductor`) and additionally stores each accepted `start_point`.
+`result["sampling_stats"]` contains the proposal/rejection counts used for:
+
+```text
+H = U * total_component_area * accepted_count / proposal_count
+```
+
+`H` is a Monte Carlo estimate. More accepted FRW starting points generally make
+that estimate more stable.
+
+The original-style executable path uses the first detected net:
+
+```bash
+python -m FRW.random_walk input/INPUTFILE_TOUCHING_DIRECT.m
+```
+
 ## Tests
 To run prebuilt tests:
 ```bash

@@ -9,6 +9,7 @@ from .gaussian_surface import (
 from .models import Bounds, Conductor, GaussianSurface, SurfaceFace
 from .sampling import (
     VGSSSamplingContext,
+    VGSSSamplingStats,
     prepare_vgss_sampling,
     sample_on_vgss,
     uniform_importance,
@@ -41,6 +42,7 @@ __all__ = [
     "find_touching_nets",
     "find_net_containing",
     "VGSSSamplingContext",
+    "VGSSSamplingStats",
     "prepare_vgss_sampling",
     "sample_on_vgss",
     "uniform_importance",
