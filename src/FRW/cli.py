@@ -6,7 +6,8 @@ import numpy as np
 
 from bgs.matlab_parser import parse_matlab_geometry
 from bgs.vgss import build_all_net_vgss
-from .random_walk import run_frw_geometry, visualize_3d_walk
+from .random_walk import run_frw_geometry
+from .visualization import visualize_3d_walk
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -48,6 +49,11 @@ def _build_parser() -> argparse.ArgumentParser:
         default=Path("../../output") / "frw_exported_data.json",
         help="Path to export the FRW walk data JSON. Default: output/frw_exported_data.json",
     )
+    parser.add_argument(
+        "--no-visualization",
+        action="store_true",
+        help="Disable 3D visualization of the geometry and VGSS.",
+    )
     return parser
 
 
@@ -79,7 +85,8 @@ if __name__ == "__main__":
     master_vgss = all_net_vgss[0]
     rng = np.random.default_rng(args.seed)
 
-    visualize_3d_walk(system_conductors, master_vgss, rng)
+    if not args.no_visualization:
+        visualize_3d_walk(system_conductors, master_vgss, rng)
 
     print("\nExecuting Batch Geometric Walk Engine...")
     print(f"Master Net: {master_vgss.net.name}")
