@@ -61,7 +61,11 @@ def run_frw_geometry(conductors, master_vgss, rng, num_walks=1000, max_hops=100)
     all_walk_data = []
     sampling_stats = VGSSSamplingStats()
 
+
     for walk in range(num_walks):
+        percent_done = (walk + 1) / num_walks * 100.0
+        print(f"\rProgress: {percent_done:.1f}% ({walk + 1}/{num_walks})", end="", flush=True)
+
         current_p = sample_on_vgss(
             master_vgss.sampling_context,
             rng,
@@ -406,61 +410,6 @@ def visualize_3d_walk(conductors, master_vgss, rng):
 # 5. MAIN EXECUTION
 # ==========================================
 if __name__ == "__main__":
-
-    if len(sys.argv) < 2:
-        print("Error: No input file provided.")
-        print("Usage: python -m FRW.random_walk <input_file.m>")
-        sys.exit(1)
-
-    filename = sys.argv[1]
-    print(f"Reading geometry from {filename}...\n")
-
-    try:
-        system_conductors = parse_matlab_geometry(filename)
-    except FileNotFoundError:
-        print(f"ERROR: Could not find '{filename}'")
-        sys.exit(1)
-
-    if not system_conductors:
-        print("No conductors found in the file.")
-        sys.exit(1)
-
-    print("Parsed Conductors:")
-    for c in system_conductors:
-        print(c)
-
-    all_net_vgss = build_all_net_vgss(
-        system_conductors,
-        scale_factor=1.25,
-        max_distance=10.0,
+    print(
+        "Run FRW via CLI module: python -m FRW.cli <input_file.m>"
     )
-    master_vgss = all_net_vgss[0]
-    rng = np.random.default_rng(1234)
-
-    # Visualizations print their path data before rendering.
-    # visualize_2d_walk(system_conductors, master_vgss, rng)
-    visualize_3d_walk(system_conductors, master_vgss, rng)
-
-    print("\nExecuting Batch Geometric Walk Engine...")
-    print(f"Master Net: {master_vgss.net.name}")
-    print(f"Conductors: {', '.join(master_vgss.net.conductor_names)}")
-    print("-" * 30)
-
-    n_walks = 5000
-    export_data = run_frw_geometry(
-        system_conductors,
-        master_vgss,
-        rng,
-        num_walks=n_walks,
-    )
-
-    print(f"Total Walks Completed: {len(export_data['walks'])}")
-    print(f"Estimated H: {export_data['H']:.6f}")
-
-    output_filename = "output/frw_exported_data.json"
-    print(f"\nExporting all walk data to {output_filename}...")
-
-    with open(output_filename, "w") as outfile:
-        json.dump(export_data, outfile, indent=4)
-
-    print(f"Success! Data for {n_walks} walks successfully saved.")
