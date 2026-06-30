@@ -8,7 +8,7 @@ import numpy as np
 DIRECTIONS = ("PX", "PY", "PZ", "NX", "NY", "NZ")
 
 
-@dataclass(frozen=True)
+@dataclass 
 class Bounds:
     """Axis-aligned bounds for a cuboid."""
 
@@ -65,7 +65,7 @@ class Bounds:
         )
 
 
-@dataclass(frozen=True)
+@dataclass 
 class Conductor:
     """A conductor block parsed from the input geometry."""
 
@@ -100,7 +100,7 @@ class Conductor:
         return float(np.max(np.abs(point - clamped)))
 
 
-@dataclass(frozen=True)
+@dataclass 
 class SurfaceFace:
     """One rectangular face of a generated cuboid BGS."""
 
@@ -110,7 +110,7 @@ class SurfaceFace:
     area: float
 
 
-@dataclass(frozen=True)
+@dataclass 
 class GaussianSurface:
     """Cuboid Boundary Gaussian Surface enclosing one master conductor."""
 

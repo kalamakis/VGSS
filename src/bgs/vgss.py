@@ -73,11 +73,7 @@ def build_net_vgss(
         abs_tol=abs_tol,
     )
 
-    return NetVGSS(
-        net=net,
-        bgs_results=tuple(bgs_results),
-        sampling_context=context,
-    )
+    return NetVGSS(net=net, bgs_results=tuple(bgs_results), sampling_context=context, )
 
 
 def build_all_net_vgss(

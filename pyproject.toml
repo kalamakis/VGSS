@@ -17,7 +17,7 @@ dependencies = [
 dev = ["pytest>=7.0"]
 
 [project.scripts]
-bgs-generate = "bgs.main:main"
+bgs-generate = "bgs.cli:main"
 vgss-sample = "bgs.vgss_cli:main"
 
 [tool.setuptools]

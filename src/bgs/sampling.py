@@ -115,13 +115,12 @@ class VGSSSamplingStats:
 
     @property
     def acceptance_rate(self) -> float:
-        if self.proposal_count == 0:
-            return 0.0
+        if self.proposal_count == 0: return 0.0
         return self.accepted_count / self.proposal_count
 
     def estimate_H(self, context: VGSSSamplingContext) -> float:
         """
-        Estimate H = integral_VGSS p(r) dS from Algorithm 4.1 proposals.
+        Estimate H = integral_VGSS p(r) dS from Algorithm 4.1.
 
         Each raw proposal has density 1 / total_component_area over the
         component-BGS representation.  The geometry, 1/n_c, and p(r)/U
@@ -131,13 +130,11 @@ class VGSSSamplingStats:
         if self.proposal_count == 0:
             raise ValueError("H cannot be estimated before any VGSS proposals.")
         return (
-            context.upper_bound
-            * context.total_component_area
-            * self.acceptance_rate
+            context.upper_bound * context.total_component_area * self.acceptance_rate
         )
 
-    def as_dict(self, context: VGSSSamplingContext) -> dict[str, float | int]:
-        """Return JSON-serializable sampling and H-estimator metadata."""
+    def as_dict(self, context: VGSSSamplingContext):
+        """Return JSON-serializable sampling metadata."""
 
         return {
             "proposal_count": self.proposal_count,
