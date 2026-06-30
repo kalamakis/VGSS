@@ -45,7 +45,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--output",
         type=Path,
-        default=Path("output") / "frw_exported_data.json",
+        default=Path("../../output") / "frw_exported_data.json",
         help="Path to export the FRW walk data JSON. Default: output/frw_exported_data.json",
     )
     return parser
