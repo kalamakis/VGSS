@@ -1,6 +1,6 @@
 # Boundary Gaussian Surfaces, VGSS Sampling, and FRW Integration
 
-This project provides a correctness-focused implementation of:
+This project provides an implementation of:
 
 - conductor-level Boundary Gaussian Surface generation based on Algorithm 4.2;
 - touch-connected electrical-net detection;
